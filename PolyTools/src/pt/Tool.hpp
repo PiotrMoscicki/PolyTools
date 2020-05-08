@@ -8,10 +8,23 @@
 
 namespace pt
 {
+	class ToolInfo
+	{
+		std::string name;
+	};
+
 	// ************************************************************************************************
 	class Tool
 	{
 	public:
+		// ********************************************************************************************
+		class Configs
+		{
+		public:
+			std::string toolBarConfig;
+			std::string shortcutsConfig;
+		};
+
 		// ********************************************************************************************
 		class Dependencies
 		{
@@ -20,7 +33,6 @@ namespace pt
 			std::shared_ptr<QUndoStack> undoStack;
 			std::unique_ptr<IToolWindowHandle> window;
 			std::shared_ptr<IActionsRegistry> actionsRegistry;
-			std::string toolBarConfig;
 		};
 
 		// ********************************************************************************************
@@ -32,7 +44,10 @@ namespace pt
 			static void close(Tool& tool) { tool.close(); }
 		};
 
+		bool isOpen() const { return m_isOpen; }
+
 	protected:
+		Tool(Configs configs) : m_defaultConfigs(std::move(configs)) {}
 		virtual void onOpen() = 0;
 		virtual void onUpdate(float dt) = 0;
 		virtual void onClose() = 0;
@@ -54,6 +69,26 @@ namespace pt
 		void update(const float dt);
 		void close();
 
+		Configs m_defaultConfigs;
 		Dependencies m_deps;
+		bool m_isOpen = false;
+	};
+
+	// ********************************************************************************************
+	template <typename T>
+	class CreateToolIntent
+	{
+	public:
+		using Result = std::unique_ptr<T>;
+		static inline pp::IntentInfo Info = { std::string("CreateToolIntent_") + T::Info.name, 1 };
+	};
+
+	// ********************************************************************************************
+	template <typename T>
+	class GetAdditionalToolConfigsEvent
+	{
+	public:
+		using Result = Configs;
+		static inline pp::EventInfo Info = { std::string("GetAdditionalToolConfigs_") + T::Info.name, 1 };
 	};
 } // namespace pt
