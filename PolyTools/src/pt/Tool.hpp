@@ -10,6 +10,7 @@ namespace pt
 {
 	class ToolInfo
 	{
+	public:
 		std::string name;
 	};
 
@@ -56,7 +57,16 @@ namespace pt
 		void setWidget(QWidget* widget) { m_deps.window->setWidget(widget); }
 
 		// actions (action bar is automatically refreshed)
-		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action);
+		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action)
+		{
+			if (m_deps.actionsRegistry->registerAction(std::move(uniqueName), std::move(action)))
+			{
+				m_deps.window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+				return true;
+			}
+			else
+				return false;
+		}
 
 		// undo/redo
 		std::shared_ptr<QUndoStack> getUndoStack() { return m_deps.undoStack; }
@@ -65,9 +75,24 @@ namespace pt
 		std::shared_ptr<pp::Router> getRouter() { return m_deps.router; }
 
 	private:
-		void open(Dependencies dependencies);
-		void update(const float dt);
-		void close();
+		void open(Dependencies dependencies)
+		{
+			m_deps = std::move(dependencies);
+			onOpen();
+			m_deps.window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+			m_isOpen = true;
+		}
+
+		void update(const float dt)
+		{
+			onUpdate(dt);
+		}
+
+		void close()
+		{
+			m_isOpen = false;
+			onClose();
+		}
 
 		Configs m_defaultConfigs;
 		Dependencies m_deps;
@@ -81,14 +106,5 @@ namespace pt
 	public:
 		using Result = std::unique_ptr<T>;
 		static inline pp::IntentInfo Info = { std::string("CreateToolIntent_") + T::Info.name, 1 };
-	};
-
-	// ********************************************************************************************
-	template <typename T>
-	class GetAdditionalToolConfigsEvent
-	{
-	public:
-		using Result = Configs;
-		static inline pp::EventInfo Info = { std::string("GetAdditionalToolConfigs_") + T::Info.name, 1 };
 	};
 } // namespace pt

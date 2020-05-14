@@ -21,7 +21,7 @@ namespace pt
 	};
 
 	// ************************************************************************************************
-	class OpenISubEditorWindowHandle
+	class OpenSubEditorWindowIntent
 	{
 	public:
 		using Result = std::unique_ptr<ISubEditorWindowHandle>;

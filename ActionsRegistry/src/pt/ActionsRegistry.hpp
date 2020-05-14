@@ -2,14 +2,15 @@
 
 #include <qmenubar.h>
 #include <qtoolbar.h>
+#include <pt/IActionsRegistry.hpp>
 
 namespace pt
 {
 	// ************************************************************************************************
-	class IActionsRegistry
+	class ActionsRegistry : public IActionsRegistry
 	{
 	public:
-		virtual bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action) = 0;
+		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action) override;
 		 
 		/* config format
 		[
@@ -31,7 +32,7 @@ namespace pt
 			}
 		]
 		*/
-		virtual void refreshShortcuts(const std::string& config) = 0;
+		void refreshShortcuts(const std::string& config) override;
 
 		/* config format
 		[
@@ -79,7 +80,7 @@ namespace pt
 			}
 		]
 		*/
-		virtual QMenuBar* createMenuBar(const std::string& config) = 0;
+		QMenuBar* createMenuBar(const std::string& config) override;
 
 		/* config format
 		[
@@ -95,7 +96,7 @@ namespace pt
 			}
 		]
 		*/
-		virtual QToolBar* createToolBar(const std::string& config) = 0;
+		QToolBar* createToolBar(const std::string& config) override;
 	};
 
 } // namespace pt

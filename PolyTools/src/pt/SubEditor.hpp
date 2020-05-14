@@ -17,7 +17,7 @@ namespace pt
 		class Configs
 		{
 		public:
-			std::string manuBarConfig;
+			std::string menuBarConfig;
 			std::string toolBarConfig;
 			std::string shortcutsConfig;
 			std::string layoutConfig;
@@ -29,7 +29,6 @@ namespace pt
 		public:
 			std::shared_ptr<pp::Router> router;
 			std::shared_ptr<IActionsRegistry> actionsRegistry;
-			std::string lqyoutConfig;
 		};
 
 		// ********************************************************************************************
@@ -168,7 +167,17 @@ namespace pt
 		}
 
 		// actions (action bar is automatically refreshed)
-		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action);
+		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action)
+		{
+			if (m_deps.actionsRegistry->registerAction(std::move(uniqueName), std::move(action)))
+			{
+				m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
+				m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+				return true;
+			}
+			else
+				return false;
+		}
 
 		// undo/redo
 		std::shared_ptr<QUndoStack> getUndoStack() { return m_undoStack; }
@@ -177,10 +186,66 @@ namespace pt
 		std::shared_ptr<pp::Router> getRouter() { return m_deps.router; }
 
 	private:
-		void open(Dependencies dependencies);
-		void update(const float dt);
-		void close();
-		std::optional<Tool::Dependencies> generateToolDeps(const std::string& uniqueName);
+		void open(Dependencies dependencies)
+		{
+			m_deps = std::move(dependencies);
+
+			// get window for sub editor
+			if (auto result = m_deps.router->processIntent(OpenSubEditorWindowIntent()); result.has_value())
+				m_window = std::move(result.value());
+			else
+			{
+				m_deps.router->processEvent(pp::LogEvent{
+					"Couldn't create SubEditorWindowHandle; the SubEditor will not open.",
+					pp::LogEvent::eLogLevel::ERROR });
+
+				return;
+			}
+
+			// create default action registry if none provided
+			if (!m_deps.actionsRegistry)
+				m_deps.actionsRegistry = std::make_shared<ActionsRegistry>();
+
+			// create undo stack
+			m_undoStack = std::make_shared<QUndoStack>();
+
+			onOpen();
+
+			m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
+			m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+		}
+
+		void update(const float dt)
+		{
+			onUpdate(dt);
+		}
+
+		void close()
+		{
+			onClose();
+		}
+
+		std::optional<Tool::Dependencies> generateToolDeps(const std::string& uniqueName)
+		{
+			Tool::Dependencies result;
+			result.router = m_deps.router;
+			result.undoStack = m_undoStack;
+			result.actionsRegistry = m_deps.actionsRegistry;
+			result.toolBarConfig = uniqueName;
+
+			if (auto result = m_deps.router->processIntent(OpenSubEditorWindowIntent()); result.has_value())
+				m_window = std::move(result.value());
+			else
+			{
+				m_deps.router->processEvent(pp::LogEvent{
+					"Couldn't create SubEditorWindowHandle; the SubEditor will not open.",
+					pp::LogEvent::eLogLevel::ERROR });
+
+				return {};
+			}
+
+			return result;
+		}
 
 		Configs m_defaultConfigs;
 		Dependencies m_deps;

@@ -51,11 +51,11 @@ find_package(PolyPlugin REQUIRED)
 
 # Add our targets
 set(POLYTOOLS_TARGET PolyTools)
-set(CALCULATOR_TOOLS_API_TARGET CalculatorToolsAPI)
-set(CALCULATOR_TOOLS_TARGET CalculatorTools)
-set(TEST_APP_TARGET TestApp)
+set(ACTIONSREGISTRY_TARGET ActionsRegistry)
+set(CODE_TOOL_API_TARGET CodeToolAPI)
+set(CODE_TOOL_TARGET CodeTool)
 
 add_subdirectory(PolyTools)
-#add_subdirectory(CalculatorToolsAPI)
-#add_subdirectory(CalculatorTools)
-#add_subdirectory(TestApp)
+add_subdirectory(ActionsRegistry)
+add_subdirectory(Test/CodeToolAPI)
+add_subdirectory(Test/CodeTool)
