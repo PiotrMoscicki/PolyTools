@@ -1,8 +1,5 @@
 #pragma once
 
-#include <typeindex>
-#include <qstatusbar.h>
-
 #include <pt/IActionsRegistry.hpp>
 #include <pt/ISubEditorWindowHandle.hpp>
 #include <pt/Tool.hpp>
@@ -10,19 +7,22 @@
 namespace pt
 {
 	// ************************************************************************************************
+	// ************************************************************************************************
+	// ************************************************************************************************
+	class SubEditorInfo
+	{
+	public:
+		std::string name;
+	};
+
+	// ************************************************************************************************
+	// ************************************************************************************************
+	// ************************************************************************************************
 	class SubEditor : public Tool::OwnerAttorney
 	{
 	public:
 		// ********************************************************************************************
-		class Configs
-		{
-		public:
-			std::string menuBarConfig;
-			std::string toolBarConfig;
-			std::string shortcutsConfig;
-			std::string layoutConfig;
-		};
-
+		// ********************************************************************************************
 		// ********************************************************************************************
 		class Dependencies
 		{
@@ -32,6 +32,8 @@ namespace pt
 		};
 
 		// ********************************************************************************************
+		// ********************************************************************************************
+		// ********************************************************************************************
 		class OwnerAttorney
 		{
 		protected:
@@ -40,14 +42,22 @@ namespace pt
 			static void close(SubEditor& subEditor) { subEditor.close(); }
 		};
 
+		// ********************************************************************************************
+		bool isOpen() const { return m_isOpen; }
+
+		// ********************************************************************************************
+		virtual const SubEditorInfo& info() const = 0;
+
 	protected:
 		SubEditor(Configs configs) : m_defaultConfigs(std::move(configs)) {}
 		virtual void onOpen() = 0;
 		virtual void onUpdate(float dt) = 0;
 		virtual void onClose() = 0;
 
-		// name
+		// ********************************************************************************************
 		void setTitle(const std::string& name) { m_window->setTitle(name); }
+
+		// ********************************************************************************************
 		void setStatusBar(QStatusBar* statusBar) { m_window->setStatusBar(statusBar); }
 
 		// ********************************************************************************************
@@ -166,6 +176,7 @@ namespace pt
 			return std::find(m_tools.begin(), m_tools.end(), T::Info) != m_tools.end(); 
 		}
 
+		// ********************************************************************************************
 		// actions (action bar is automatically refreshed)
 		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action)
 		{
@@ -179,20 +190,26 @@ namespace pt
 				return false;
 		}
 
+		// ********************************************************************************************
 		// undo/redo
 		std::shared_ptr<QUndoStack> getUndoStack() { return m_undoStack; }
 
+		// ********************************************************************************************
 		// intents & events
 		std::shared_ptr<pp::Router> getRouter() { return m_deps.router; }
 
 	private:
+		// ********************************************************************************************
 		void open(Dependencies dependencies)
 		{
 			m_deps = std::move(dependencies);
 
 			// get window for sub editor
 			if (auto result = m_deps.router->processIntent(OpenSubEditorWindowIntent()); result.has_value())
+			{
 				m_window = std::move(result.value());
+				m_window->setOwnerInfo(info());
+			}
 			else
 			{
 				m_deps.router->processEvent(pp::LogEvent{
@@ -213,18 +230,23 @@ namespace pt
 
 			m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
 			m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+			m_isOpen = true;
 		}
 
+		// ********************************************************************************************
 		void update(const float dt)
 		{
 			onUpdate(dt);
 		}
 
+		// ********************************************************************************************
 		void close()
 		{
+			m_isOpen = false;
 			onClose();
 		}
 
+		// ********************************************************************************************
 		std::optional<Tool::Dependencies> generateToolDeps(const std::string& uniqueName)
 		{
 			Tool::Dependencies result;
@@ -247,11 +269,22 @@ namespace pt
 			return result;
 		}
 
-		Configs m_defaultConfigs;
 		Dependencies m_deps;
 		std::unique_ptr<ISubEditorWindowHandle> m_window;
 		std::shared_ptr<QUndoStack> m_undoStack;
+		bool m_isOpen = false;
 
 		std::map<ToolInfo, std::unique_ptr<Tool>> m_tools;
+	};
+
+	// ************************************************************************************************
+	// ************************************************************************************************
+	// ************************************************************************************************
+	template <typename T>
+	class CreateSubEditorIntent
+	{
+	public:
+		using Result = std::unique_ptr<T>;
+		static inline pp::IntentInfo Info = { std::string("CreateSubEditorIntent_") + T::Info.name, 1 };
 	};
 } // namespace pt
