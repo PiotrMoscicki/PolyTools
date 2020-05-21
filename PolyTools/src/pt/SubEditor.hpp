@@ -14,21 +14,10 @@ namespace pt
 	{
 	public:
 		// ********************************************************************************************
-		class Configs
-		{
-		public:
-			std::string menuBarConfig;
-			std::string toolBarConfig;
-			std::string shortcutsConfig;
-			std::string layoutConfig;
-		};
-
-		// ********************************************************************************************
 		class Dependencies
 		{
 		public:
 			std::shared_ptr<pp::Router> router;
-			std::shared_ptr<IActionsRegistry> actionsRegistry;
 		};
 
 		// ********************************************************************************************
@@ -41,7 +30,6 @@ namespace pt
 		};
 
 	protected:
-		SubEditor(Configs configs) : m_defaultConfigs(std::move(configs)) {}
 		virtual void onOpen() = 0;
 		virtual void onUpdate(float dt) = 0;
 		virtual void onClose() = 0;
@@ -186,6 +174,7 @@ namespace pt
 		std::shared_ptr<pp::Router> getRouter() { return m_deps.router; }
 
 	private:
+		// ********************************************************************************************
 		void open(Dependencies dependencies)
 		{
 			m_deps = std::move(dependencies);
@@ -215,16 +204,19 @@ namespace pt
 			m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
 		}
 
+		// ********************************************************************************************
 		void update(const float dt)
 		{
 			onUpdate(dt);
 		}
 
+		// ********************************************************************************************
 		void close()
 		{
 			onClose();
 		}
 
+		// ********************************************************************************************
 		std::optional<Tool::Dependencies> generateToolDeps(const std::string& uniqueName)
 		{
 			Tool::Dependencies result;
@@ -250,7 +242,7 @@ namespace pt
 		Configs m_defaultConfigs;
 		Dependencies m_deps;
 		std::unique_ptr<ISubEditorWindowHandle> m_window;
-		std::shared_ptr<QUndoStack> m_undoStack;
+		QUndoStack m_undoStack;
 
 		std::map<ToolInfo, std::unique_ptr<Tool>> m_tools;
 	};

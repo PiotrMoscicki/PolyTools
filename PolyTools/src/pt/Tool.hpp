@@ -1,10 +1,10 @@
 #pragma once
 
-#include <qundostack.h>
-
 #include <pp/Router.hpp>
-#include <pt/IActionsRegistry.hpp>
+#include <pt/Settings.hpp>
 #include <pt/IToolWindowHandle.hpp>
+
+class QUndoStack;
 
 namespace pt
 {
@@ -19,21 +19,13 @@ namespace pt
 	{
 	public:
 		// ********************************************************************************************
-		class Configs
-		{
-		public:
-			std::string toolBarConfig;
-			std::string shortcutsConfig;
-		};
-
-		// ********************************************************************************************
 		class Dependencies
 		{
 		public:
 			std::shared_ptr<pp::Router> router;
-			std::shared_ptr<QUndoStack> undoStack;
 			std::unique_ptr<IToolWindowHandle> window;
-			std::shared_ptr<IActionsRegistry> actionsRegistry;
+			QUndoStack& undoStack;
+			std::map<std::string, std::shared_ptr<QAction>>& actionsRegistry;
 		};
 
 		// ********************************************************************************************
