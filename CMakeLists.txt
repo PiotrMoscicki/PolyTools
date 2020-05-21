@@ -52,10 +52,38 @@ find_package(PolyPlugin REQUIRED)
 # Add our targets
 set(POLYTOOLS_TARGET PolyTools)
 set(ACTIONSREGISTRY_TARGET ActionsRegistry)
-set(CODE_TOOL_API_TARGET CodeToolAPI)
-set(CODE_TOOL_TARGET CodeTool)
 
 add_subdirectory(PolyTools)
 add_subdirectory(ActionsRegistry)
-add_subdirectory(Test/CodeToolAPI)
-add_subdirectory(Test/CodeTool)
+
+    
+
+#################################################
+# installation instructions
+#################################################
+install(TARGETS ${POLYTOOLS_TARGET}
+    EXPORT ${POLYTOOLS_TARGET}_Targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("${POLYTOOLS_TARGET}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/cmake/${POLYTOOLS_TARGET}Config.cmake.in"
+    "${PROJECT_BINARY_DIR}/${POLYTOOLS_TARGET}Config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${POLYTOOLS_TARGET}/cmake)
+
+install(EXPORT ${POLYTOOLS_TARGET}_Targets
+    FILE ${POLYTOOLS_TARGET}Targets.cmake
+    NAMESPACE ${POLYTOOLS_TARGET}::
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${POLYTOOLS_TARGET}/cmake)
+
+install(FILES "${PROJECT_BINARY_DIR}/${POLYTOOLS_TARGET}Config.cmake"
+    "${PROJECT_BINARY_DIR}/${POLYTOOLS_TARGET}ConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${POLYTOOLS_TARGET}/cmake)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/PolyTools/src/pt DESTINATION include)
