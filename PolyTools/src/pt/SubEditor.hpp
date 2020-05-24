@@ -58,6 +58,9 @@ namespace pt
 		void setTitle(const std::string& name) { m_window->setTitle(name); }
 
 		// ********************************************************************************************
+		void setWidget(QWidget* widget) { m_window->setWidget(widget); }
+
+		// ********************************************************************************************
 		void setStatusBar(QStatusBar* statusBar) { m_window->setStatusBar(statusBar); }
 
 		// ********************************************************************************************

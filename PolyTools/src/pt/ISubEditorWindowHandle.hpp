@@ -5,6 +5,7 @@
 
 #include <pp/Info.hpp>
 
+class QWidget;
 class QMenuBar;
 class QToolBar;
 class QStatusBar;
@@ -25,6 +26,10 @@ namespace pt
 
 		// Sets title of the sub editor (text in tab)
 		virtual void setTitle(const std::string& title) = 0;
+
+		// Adds dockable sub editor 'sub window' so it's easy to write
+		// sub editor without tools.
+		virtual void setWidget(QWidget* widget) = 0;
 
 		// sets menu bar for the whole sub editor window
 		virtual void setMenuBar(QMenuBar* menuBar) = 0;
