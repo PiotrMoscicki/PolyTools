@@ -15,6 +15,7 @@ namespace pt
 	{
 	public:
 		std::string name;
+		int version = 0;
 	};
 
 	// ************************************************************************************************
@@ -31,8 +32,8 @@ namespace pt
 		public:
 			std::shared_ptr<pp::Router> router;
 			std::unique_ptr<IToolWindowHandle> window;
-			QUndoStack& undoStack;
-			std::map<std::string, std::shared_ptr<QAction>>& actionsRegistry;
+			QUndoStack* undoStack = nullptr;
+			std::map<std::string, std::shared_ptr<QAction>>* actionsRegistry = nullptr;
 		};
 
 		// ********************************************************************************************
@@ -67,9 +68,10 @@ namespace pt
 		// actions (action bar is automatically refreshed)
 		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action)
 		{
-			if (m_deps.actionsRegistry->registerAction(std::move(uniqueName), std::move(action)))
+			if (m_deps.actionsRegistry->find(uniqueName) == m_deps.actionsRegistry->end())
 			{
-				m_deps.window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+				m_deps.actionsRegistry->insert({ std::move(uniqueName), std::move(action) });
+				//m_deps.window->setToolBar(m_deps.actionsRegistry.createToolBar(m_defaultConfigs.toolBarConfig));
 				return true;
 			}
 			else
@@ -78,7 +80,7 @@ namespace pt
 
 		// ********************************************************************************************
 		// undo/redo
-		std::shared_ptr<QUndoStack> getUndoStack() { return m_deps.undoStack; }
+		QUndoStack& getUndoStack() { return *m_deps.undoStack; }
 
 		// ********************************************************************************************
 		// intents & events
@@ -90,7 +92,7 @@ namespace pt
 		{
 			m_deps = std::move(dependencies);
 			onOpen();
-			m_deps.window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+			//m_deps.window->setToolBar(m_deps.actionsRegistry.createToolBar(m_defaultConfigs.toolBarConfig));
 			m_isOpen = true;
 		}
 
@@ -119,6 +121,6 @@ namespace pt
 	{
 	public:
 		using Result = std::unique_ptr<T>;
-		static inline pp::IntentInfo Info = { std::string("CreateToolIntent_") + T::Info.name, 1 };
+		static inline pp::IntentInfo Info = { std::string("CreateToolIntent_") + T::Info.name, T::Info.version };
 	};
 } // namespace pt

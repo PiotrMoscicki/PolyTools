@@ -50,16 +50,4 @@ namespace pt
 		const Tool& tool;
 	};
 
-
-	// ************************************************************************************************
-	class IActionsRegistry
-	{
-	public:
-		virtual bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action) = 0;
-
-		virtual void refreshShortcuts(const QSettings& default, const std::vector<QSettings>& additional) = 0;
-		virtual QMenuBar* createMenuBar(const QSettings& default, const std::vector<QSettings>& additional) = 0;
-		virtual QToolBar* createToolBar(const QSettings& default, const std::vector<QSettings>& additional) = 0;
-	};
-
 } // namespace pt

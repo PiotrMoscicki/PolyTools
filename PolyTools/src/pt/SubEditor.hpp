@@ -1,6 +1,7 @@
 #pragma once
 
-#include <pt/IActionsRegistry.hpp>
+#include <QUndoStack>
+#include <pp/Common.hpp>
 #include <pt/ISubEditorWindowHandle.hpp>
 #include <pt/Tool.hpp>
 
@@ -13,6 +14,7 @@ namespace pt
 	{
 	public:
 		std::string name;
+		int version = 0;
 	};
 
 	// ************************************************************************************************
@@ -67,17 +69,17 @@ namespace pt
 			{
 				m_deps.router->processEvent(pp::LogEvent{
 					"Tool is already registered; it won't be registered again.",
-					pp::LogEvent::eLogLevel::ERROR });
+					pp::LogEvent::eLogLevel::ERR });
 			}
 			else
 			{
-				if (auto tool = m_deps.router->processIntent(CreateToolIntent<T>(); tool.has_value())
+				if (auto tool = m_deps.router->processIntent(CreateToolIntent<T>()); tool.has_value())
 					m_tools.insert(std::move(T::Info.name), std::move(tool.value()));
 				else
 				{
 					m_deps.router->processEvent(pp::LogEvent{
 						"Couldn't find implementation for tool",
-						pp::LogEvent::eLogLevel::ERROR });
+						pp::LogEvent::eLogLevel::ERR });
 				}
 			}
 
@@ -92,7 +94,7 @@ namespace pt
 			{
 				m_deps.router->processEvent(pp::LogEvent{
 					"Tool is already opened; it won't be opened again.",
-					pp::LogEvent::eLogLevel::ERROR });
+					pp::LogEvent::eLogLevel::ERR });
 			}
 			else
 			{
@@ -105,7 +107,7 @@ namespace pt
 				{
 					m_deps.router->processEvent(pp::LogEvent{
 						"Couldn't open tool.",
-						pp::LogEvent::eLogLevel::ERROR });
+						pp::LogEvent::eLogLevel::ERR });
 				}
 			}
 
@@ -124,14 +126,14 @@ namespace pt
 				{
 					m_deps.router->processEvent(pp::LogEvent{
 						"Tool is already closed; it won't be closed again.",
-						pp::LogEvent::eLogLevel::ERROR });
+						pp::LogEvent::eLogLevel::ERR });
 				}
 			}
 			else
 			{
 				m_deps.router->processEvent(pp::LogEvent{
 					"Can't close tool which is not registered.",
-					pp::LogEvent::eLogLevel::ERROR });
+					pp::LogEvent::eLogLevel::ERR });
 			}
 		}
 
@@ -178,10 +180,11 @@ namespace pt
 		// actions (action bar is automatically refreshed)
 		bool registerAction(std::string uniqueName, std::shared_ptr<QAction> action)
 		{
-			if (m_deps.actionsRegistry->registerAction(std::move(uniqueName), std::move(action)))
+			if (m_actionsRegistry.find(uniqueName) == m_actionsRegistry.end())
 			{
-				m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
-				m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+				m_actionsRegistry.insert({ std::move(uniqueName), std::move(action) });
+				//m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
+				//m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
 				return true;
 			}
 			else
@@ -190,7 +193,7 @@ namespace pt
 
 		// ********************************************************************************************
 		// undo/redo
-		std::shared_ptr<QUndoStack> getUndoStack() { return m_undoStack; }
+		QUndoStack& getUndoStack() { return m_undoStack; }
 
 		// ********************************************************************************************
 		// intents & events
@@ -212,22 +215,15 @@ namespace pt
 			{
 				m_deps.router->processEvent(pp::LogEvent{
 					"Couldn't create SubEditorWindowHandle; the SubEditor will not open.",
-					pp::LogEvent::eLogLevel::ERROR });
+					pp::LogEvent::eLogLevel::ERR });
 
 				return;
 			}
 
-			// create default action registry if none provided
-			if (!m_deps.actionsRegistry)
-				m_deps.actionsRegistry = std::make_shared<ActionsRegistry>();
-
-			// create undo stack
-			m_undoStack = std::make_shared<QUndoStack>();
-
 			onOpen();
 
-			m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
-			m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+			//m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
+			//m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
 			m_isOpen = true;
 		}
 
@@ -249,9 +245,8 @@ namespace pt
 		{
 			Tool::Dependencies result;
 			result.router = m_deps.router;
-			result.undoStack = m_undoStack;
-			result.actionsRegistry = m_deps.actionsRegistry;
-			result.toolBarConfig = uniqueName;
+			result.undoStack = &m_undoStack;
+			result.actionsRegistry = &m_actionsRegistry;
 
 			if (auto result = m_deps.router->processIntent(OpenSubEditorWindowIntent()); result.has_value())
 				m_window = std::move(result.value());
@@ -259,7 +254,7 @@ namespace pt
 			{
 				m_deps.router->processEvent(pp::LogEvent{
 					"Couldn't create SubEditorWindowHandle; the SubEditor will not open.",
-					pp::LogEvent::eLogLevel::ERROR });
+					pp::LogEvent::eLogLevel::ERR });
 
 				return {};
 			}
@@ -270,6 +265,7 @@ namespace pt
 		Dependencies m_deps;
 		std::unique_ptr<ISubEditorWindowHandle> m_window;
 		QUndoStack m_undoStack;
+		std::map<std::string, std::shared_ptr<QAction>> m_actionsRegistry;
 		bool m_isOpen = false;
 
 		std::map<ToolInfo, std::unique_ptr<Tool>> m_tools;
@@ -283,6 +279,6 @@ namespace pt
 	{
 	public:
 		using Result = std::unique_ptr<T>;
-		static inline pp::IntentInfo Info = { std::string("CreateSubEditorIntent_") + T::Info.name, 1 };
+		static inline pp::IntentInfo Info = { std::string("CreateSubEditorIntent_") + T::Info.name, T::Info.version };
 	};
 } // namespace pt
