@@ -30,6 +30,7 @@ namespace pt
 		{
 		public:
 			std::shared_ptr<pp::Router> router;
+			std::unique_ptr<ISubEditorWindowHandle> window;
 		};
 
 		// ********************************************************************************************
@@ -44,6 +45,9 @@ namespace pt
 		};
 
 		// ********************************************************************************************
+		virtual ~SubEditor() = default;
+
+		// ********************************************************************************************
 		bool isOpen() const { return m_isOpen; }
 
 		// ********************************************************************************************
@@ -55,13 +59,13 @@ namespace pt
 		virtual void onClose() = 0;
 
 		// ********************************************************************************************
-		void setTitle(const std::string& name) { m_window->setTitle(name); }
+		void setTitle(const std::string& name) { m_deps.window->setTitle(name); }
 
 		// ********************************************************************************************
-		void setWidget(QWidget* widget) { m_window->setWidget(widget); }
+		void setWidget(QWidget* widget) { m_deps.window->setWidget(widget); }
 
 		// ********************************************************************************************
-		void setStatusBar(QStatusBar* statusBar) { m_window->setStatusBar(statusBar); }
+		void setStatusBar(QStatusBar* statusBar) { m_deps.window->setStatusBar(statusBar); }
 
 		// ********************************************************************************************
 		// managing tools
@@ -186,8 +190,8 @@ namespace pt
 			if (m_actionsRegistry.find(uniqueName) == m_actionsRegistry.end())
 			{
 				m_actionsRegistry.insert({ std::move(uniqueName), std::move(action) });
-				//m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
-				//m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+				//m_deps.window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
+				//m_deps.window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
 				return true;
 			}
 			else
@@ -208,25 +212,10 @@ namespace pt
 		{
 			m_deps = std::move(dependencies);
 
-			// get window for sub editor
-			if (auto result = m_deps.router->processIntent(OpenSubEditorWindowIntent()); result.has_value())
-			{
-				m_window = std::move(result.value());
-				m_window->setOwnerInfo(info());
-			}
-			else
-			{
-				m_deps.router->processEvent(pp::LogEvent{
-					"Couldn't create SubEditorWindowHandle; the SubEditor will not open.",
-					pp::LogEvent::eLogLevel::ERR });
-
-				return;
-			}
-
 			onOpen();
 
-			//m_window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
-			//m_window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
+			//m_deps.window->setMenuBar(m_deps.actionsRegistry->createMenuBar(m_defaultConfigs.menuBarConfig));
+			//m_deps.window->setToolBar(m_deps.actionsRegistry->createToolBar(m_defaultConfigs.toolBarConfig));
 			m_isOpen = true;
 		}
 
@@ -250,23 +239,12 @@ namespace pt
 			result.router = m_deps.router;
 			result.undoStack = &m_undoStack;
 			result.actionsRegistry = &m_actionsRegistry;
-
-			if (auto result = m_deps.router->processIntent(OpenSubEditorWindowIntent()); result.has_value())
-				m_window = std::move(result.value());
-			else
-			{
-				m_deps.router->processEvent(pp::LogEvent{
-					"Couldn't create SubEditorWindowHandle; the SubEditor will not open.",
-					pp::LogEvent::eLogLevel::ERR });
-
-				return {};
-			}
+			result.window = m_deps.window->addToolWindow(uniqueName);
 
 			return result;
 		}
 
 		Dependencies m_deps;
-		std::unique_ptr<ISubEditorWindowHandle> m_window;
 		QUndoStack m_undoStack;
 		std::map<std::string, std::shared_ptr<QAction>> m_actionsRegistry;
 		bool m_isOpen = false;

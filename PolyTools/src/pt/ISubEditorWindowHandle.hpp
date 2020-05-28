@@ -49,14 +49,4 @@ namespace pt
 		// Close sub editor's window
 		virtual void close() = 0;
 	};
-
-	// ************************************************************************************************
-	// ************************************************************************************************
-	// ************************************************************************************************
-	class OpenSubEditorWindowIntent
-	{
-	public:
-		using Result = std::unique_ptr<ISubEditorWindowHandle>;
-		static inline pp::IntentInfo Info = { "pt::OpenSubEditorWindowIntent", 1 };
-	};
 } // namespace pt
